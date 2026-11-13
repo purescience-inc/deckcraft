@@ -162,9 +162,25 @@ fn dlg_header_footer(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     let foot = check(ui, d, "Footer", "footer", hf.footer);
     field(ui, d, "  Footer text:", "footerText", &hf.footer_text);
     let hide = check(ui, d, "Don't show on title slide", "hide", hf.hide_on_title);
-    ui.add_space(6.0);
     let mut apply_all = false;
     let mut apply = false;
+    if crate::pure::ON {
+        // The same footer as every other dialog: a rule, steady buttons, Apply to All the main one,
+        // and a row only as tall as its buttons.
+        crate::pure::dialog_footer_rule(ui);
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let t = Tokens::get(ui.ctx());
+                let size = crate::pure::DIALOG_BUTTON;
+                apply_all = ui.add(egui::Button::new(egui::RichText::new("Apply to All").color(t.accent_text)).fill(t.accent).stroke(egui::Stroke::NONE).min_size(size)).clicked();
+                apply = ui.add(egui::Button::new("Apply").min_size(size)).clicked();
+                if ui.add(egui::Button::new("Cancel").min_size(size)).clicked() {
+                    d.fields.insert("cancel".into(), "1".into());
+                }
+            });
+        });
+    } else {
+    ui.add_space(6.0);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
         apply_all = ui.button("Apply to All").clicked();
         apply = ui.button("Apply").clicked();
@@ -172,6 +188,7 @@ fn dlg_header_footer(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             d.fields.insert("cancel".into(), "1".into());
         }
     });
+    }
     if apply || apply_all {
         let dt = d.get("dateText", "");
         let ft = d.get("footerText", "");
@@ -197,6 +214,13 @@ fn dlg_hyperlink(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     let seed = hyperlink_seed_of(app.session.active());
     let slide_default = seed.slide.to_string();
     let mode = d.get("mode", seed.mode);
+    if crate::pure::ON {
+        let modes = [("url", "Web Page or File"), ("slide", "This Document"), ("email", "Email Address")];
+        let labels: Vec<&str> = modes.iter().map(|(_, l)| *l).collect();
+        if let Some(k) = crate::pure::dialog_tabs(ui, &labels, modes.iter().position(|(m, _)| mode == *m).unwrap_or(0)) {
+            d.fields.insert("mode".into(), modes[k].0.into());
+        }
+    } else {
     ui.horizontal(|ui| {
         if ui.selectable_label(mode == "url", "Web Page or File").clicked() {
             d.fields.insert("mode".into(), "url".into());
@@ -208,6 +232,7 @@ fn dlg_hyperlink(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             d.fields.insert("mode".into(), "email".into());
         }
     });
+    }
     match mode.as_str() {
         "slide" => {
             let titles: Vec<String> = app
@@ -1272,14 +1297,22 @@ fn dlg_smartart(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
 
 fn dlg_about(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     let tab = d.get("tab", "about");
+    let tabs = [("about", "About"), ("contributors", "Contributors"), ("models", "Models")];
+    if crate::pure::ON {
+        let labels: Vec<&str> = tabs.iter().map(|(_, l)| *l).collect();
+        if let Some(k) = crate::pure::dialog_tabs(ui, &labels, tabs.iter().position(|(k, _)| tab == *k).unwrap_or(0)) {
+            d.fields.insert("tab".into(), tabs[k].0.into());
+        }
+    } else {
     ui.horizontal(|ui| {
-        for (k, l) in [("about", "About"), ("contributors", "Contributors"), ("models", "Models")] {
+        for (k, l) in tabs {
             if ui.selectable_label(tab == k, l).clicked() {
                 d.fields.insert("tab".into(), k.into());
             }
         }
     });
     ui.separator();
+    }
     match tab.as_str() {
         "contributors" | "models" => {
             credits_block(ui, tab == "models");

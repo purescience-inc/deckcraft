@@ -83,12 +83,17 @@ pub fn show(app: &mut SlideApp, ctx: &egui::Context) {
     let Some(mut d) = app.dialog.take() else { return };
     let mut open = true;
     let mut close = false;
-    let mut window = egui::Window::new(crate::pure::title(title(&d.id)))
+    let shown_title = crate::pure::title(title(&d.id)).to_string();
+    let mut window = egui::Window::new(shown_title.clone())
         .id(egui::Id::unique(("dialog", d.id.clone())))
         .collapsible(false)
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, vec2(0.0, -40.0))
         .open(&mut open);
+    // Pure edition: no egui title bar; the header is painted into the frame's top margin below.
+    if crate::pure::ON {
+        window = window.title_bar(false).frame(crate::pure::dialog_frame(&ctx.global_style()));
+    }
     // Two columns of colour rows plus Save must fit the first frame (Theme Colors), as must Save
     // in Theme Fonts. A later resize clips the buttons (the window size sticks) and clicks miss them.
     if d.id == "themeColors" {
@@ -96,7 +101,10 @@ pub fn show(app: &mut SlideApp, ctx: &egui::Context) {
     } else if d.id == "themeFonts" {
         window = window.default_size(vec2(460.0, 320.0)).min_width(420.0).min_height(300.0);
     }
-    window.show(ctx, |ui| {
+    let shown = window.show(ctx, |ui| {
+        if crate::pure::ON {
+            crate::pure::dialog_spacing(ui);
+        }
         ui.set_min_width(match d.id.as_str() {
             "themeColors" => 700.0,
             "themeFonts" => 400.0,
@@ -109,6 +117,12 @@ pub fn show(app: &mut SlideApp, ctx: &egui::Context) {
         }
         close = body(app, ui, &mut d);
     });
+    if crate::pure::ON
+        && let Some(s) = &shown
+        && crate::pure::dialog_header(ctx, &s.response, &shown_title)
+    {
+        open = false;
+    }
     let escape = ctx.input(|i| i.key_pressed(egui::Key::Escape));
     if open && !close && !escape {
         app.dialog = Some(d);
@@ -129,15 +143,24 @@ pub fn show(app: &mut SlideApp, ctx: &egui::Context) {
 fn buttons(ui: &mut Ui, ok_label: &str) -> (bool, bool) {
     let mut ok = false;
     let mut cancel = false;
+    if crate::pure::ON {
+        crate::pure::dialog_footer_rule(ui);
+    } else {
     ui.add_space(8.0);
-    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+    }
+    let size = if crate::pure::ON { crate::pure::DIALOG_BUTTON } else { vec2(72.0, 24.0) };
+    // Pure edition: the row is only as tall as its buttons. A right-to-left layout straight in the
+    // window takes all the height it is offered, which left every dialog with a band of empty space
+    // and the buttons floating in its middle.
+    let row = |ui: &mut Ui, add: &mut dyn FnMut(&mut Ui)| if crate::pure::ON { ui.horizontal(|ui| ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| add(ui))); } else { ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| add(ui)); };
+    row(ui, &mut |ui: &mut Ui| {
         let t = Tokens::get(ui.ctx());
-        if ui.add(egui::Button::new(egui::RichText::new(ok_label).color(t.accent_text)).fill(t.accent).min_size(vec2(72.0, 24.0))).clicked()
+        if ui.add(egui::Button::new(egui::RichText::new(ok_label).color(t.accent_text)).fill(t.accent).min_size(size)).clicked()
             || ui.input(|i| i.key_pressed(egui::Key::Enter))
         {
             ok = true;
         }
-        if ui.add(egui::Button::new("Cancel").min_size(vec2(72.0, 24.0))).clicked() {
+        if ui.add(egui::Button::new("Cancel").min_size(size)).clicked() {
             cancel = true;
         }
     });
