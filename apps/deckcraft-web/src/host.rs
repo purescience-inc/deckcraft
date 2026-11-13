@@ -26,6 +26,9 @@
 //!     now that file; the next Save sends its name with `false`.
 //!   - Export (PDF, pictures, outline, GIF, handouts, a Save As type that isn't a presentation)
 //!     and Print: `false`. They are copies; the presentation's file stays the same.
+//! - `deckcraft:share` (to the host, Pure edition only): `{ version: "1", name }`, the person
+//!   pressed Share; `name` is the presentation's file name. It is not one of `craft-web-host`'s
+//!   messages yet, so this module posts it itself over the same two transports.
 //! - `deckcraft:dirty` whenever unsaved changes appear or go away, `deckcraft:failed` when the
 //!   app couldn't start or refused a file of 2 GiB or larger.
 //!
@@ -57,6 +60,8 @@ const MAX_AUTHOR_CHARS: usize = 256;
 #[derive(Clone)]
 pub struct Bridge {
     host: Rc<Host>,
+    /// The app's canvas: `deckcraft:share` is a `CustomEvent` on it when the page runs the app.
+    canvas: web_sys::HtmlCanvasElement,
     /// Files the host sent (the name, if it sent one), waiting for the next frame.
     opened: Rc<RefCell<Vec<(Option<String>, Vec<u8>)>>>,
 }
@@ -71,7 +76,7 @@ impl Bridge {
         if host.mode() == craft_web_host::Mode::Parent && web_sys::window()?.location().origin().ok()? == "null" {
             return None;
         }
-        Some(Self { host: Rc::new(host), opened: Rc::default() })
+        Some(Self { host: Rc::new(host), canvas: canvas.clone(), opened: Rc::default() })
     }
 
     /// Hand saved and exported files to the host instead of downloading them, and hear the files
@@ -87,6 +92,15 @@ impl Bridge {
                 log::error!("couldn't hand {name} to the page: {e}");
             }
         }));
+        // The Pure edition's Share button asks the host to share.
+        if deckcraft_ui_egui::pure::ON {
+            let bridge = self.clone();
+            services.host_share = Some(Box::new(move |name: &str| {
+                if let Err(e) = bridge.post_share(name) {
+                    log::error!("couldn't ask the page to share {name}: {e}");
+                }
+            }));
+        }
     }
 
     /// `?author=`: the host's name for the user signs new comments.
@@ -123,6 +137,34 @@ impl Bridge {
     fn post_save(&self, path: &str, bytes: &[u8], save_as: bool) -> Result<(), String> {
         let name = std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| path.to_string());
         self.host.post_save(&name, bytes, None, save_as)
+    }
+
+    /// `deckcraft:share`: `{ type, version: "1", name }` to the same-origin parent
+    /// (`?host=parent`), or a `CustomEvent` on the canvas with the fields in `detail`
+    /// (`data-host="page"`), as `craft-web-host` sends its own messages.
+    fn post_share(&self, name: &str) -> Result<(), String> {
+        use wasm_bindgen::JsValue;
+        let error = |e: JsValue| e.as_string().unwrap_or_else(|| format!("{e:?}"));
+        let message_type = craft_web_host::message_type(APP, "share");
+        let message = js_sys::Object::new();
+        let set = |key: &str, value: &str| js_sys::Reflect::set(&message, &JsValue::from_str(key), &JsValue::from_str(value)).map(|_| ());
+        set("version", craft_web_host::VERSION).map_err(error)?;
+        set("name", &craft_web_host::file_name(Some(name), "document")).map_err(error)?;
+        match self.host.mode() {
+            craft_web_host::Mode::Parent => {
+                set("type", &message_type).map_err(error)?;
+                let window = web_sys::window().ok_or("no window")?;
+                let parent = window.parent().map_err(error)?.ok_or("no parent window")?;
+                let origin = window.location().origin().map_err(error)?;
+                parent.post_message(&message, &origin).map_err(error)
+            }
+            craft_web_host::Mode::Page => {
+                let init = web_sys::CustomEventInit::new();
+                init.set_detail(&message);
+                let event = web_sys::CustomEvent::new_with_event_init_dict(&message_type, &init).map_err(error)?;
+                self.canvas.dispatch_event(&event).map(|_| ()).map_err(error)
+            }
+        }
     }
 
     /// Hear `deckcraft:open` and queue the file for the next frame.

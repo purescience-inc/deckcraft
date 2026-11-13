@@ -349,6 +349,7 @@ pub fn paint(painter: &egui::Painter, rect: egui::Rect, icon: Icon, ink: egui::C
         return;
     }
     let origin = rect.center() - vec2(size * 0.5, size * 0.5);
+    let ink = if crate::pure::ON { crate::pure::chrome::icon_ink(ink, disabled) } else { ink };
     let pen = Pen { p: painter, o: origin, k: size / 24.0, sw: stroke_width(size), ink, dis: disabled };
     draw(&pen, icon);
 }

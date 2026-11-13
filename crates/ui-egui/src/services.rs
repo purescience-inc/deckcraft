@@ -62,6 +62,10 @@ pub struct Services {
     /// presentation is then that file, and the next Save goes to it. Exports and Print still go
     /// through `download`, which the host also points at the page: they are copies.
     pub host_save: Option<HostSaveFn>,
+    /// The page hosting the app shares the presentation: called with its file name when the
+    /// person presses Share. Set only by a host that has a share of its own; the Share button is
+    /// shown only when it is.
+    pub host_share: Option<Box<dyn Fn(&str)>>,
     pub inbox: Option<Inbox>,
     /// Image on the system clipboard (PNG bytes), when the host can read one.
     pub clipboard_image: Option<Box<dyn FnMut() -> Option<Vec<u8>>>>,

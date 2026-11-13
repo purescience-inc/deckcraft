@@ -226,10 +226,12 @@ impl Pen<'_> {
     }
 
     fn col(&self, c: C) -> Color32 {
-        let dim = if self.dis { 0.35 } else { 1.0 };
+        // The Pure edition hands a disabled icon the Disabled colour itself, so nothing is faded.
+        let dim = if self.dis && !crate::pure::ON { 0.35 } else { 1.0 };
         match c {
             C::Ink(a) => self.ink.gamma_multiply(a * dim),
             C::Acc(col, a) => {
+                let col = if crate::pure::ON { crate::pure::chrome::icon_accent(col, self.ink) } else { col };
                 if self.dis {
                     self.ink.gamma_multiply(a * dim)
                 } else {
