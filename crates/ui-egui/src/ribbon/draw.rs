@@ -37,9 +37,11 @@ pub(super) fn draw(app: &mut SlideApp, ui: &mut Ui) {
             app.session.set_tool(ToolKind::Select);
             run(app, "draw.inkToShape", json!({}));
         }
-        let r = big_button(ui, Icon::InkToText, "Ink to\nText", false);
-        let _ = r.on_hover_text("Ink to Text (coming soon)");
-        let r = big_button(ui, Icon::InkToMath, "Ink to\nMath", false);
-        let _ = r.on_hover_text("Ink to Math (coming soon)");
+        if !crate::pure::ON {
+            let r = big_button(ui, Icon::InkToText, "Ink to\nText", false);
+            let _ = r.on_hover_text("Ink to Text (coming soon)");
+            let r = big_button(ui, Icon::InkToMath, "Ink to\nMath", false);
+            let _ = r.on_hover_text("Ink to Math (coming soon)");
+        }
     });
 }

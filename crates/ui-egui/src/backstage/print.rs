@@ -83,7 +83,9 @@ pub(super) fn print(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
             ui.add_space(6.0);
             dim(
                 ui,
-                if app.services.pick_save.is_some() {
+                if crate::pure::ON {
+                    "Printing goes through a PDF, ready to print from your PDF viewer."
+                } else if app.services.pick_save.is_some() {
                     "DeckCraft prints through a PDF: it opens in your PDF viewer, where you choose the printer."
                 } else {
                     "DeckCraft prints through a PDF: it downloads, ready to print from your browser or PDF viewer."

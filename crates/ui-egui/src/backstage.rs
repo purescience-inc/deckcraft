@@ -140,6 +140,9 @@ impl Nav {
 /// The side menu, top group then bottom group, in keyboard order. PowerPoint's Share (cloud) is
 /// left out; with nothing open only Home, New and Open stay at the top.
 pub fn entries(has_doc: bool) -> (Vec<Nav>, Vec<Nav>) {
+    if crate::pure::ON {
+        return crate::pure::file_entries(has_doc);
+    }
     let mut top = vec![Nav::Page(Page::Home), Nav::Page(Page::New), Nav::Page(Page::Open)];
     if has_doc {
         top.extend([Nav::Page(Page::Info), Nav::Save, Nav::Page(Page::SaveAs), Nav::Page(Page::Print), Nav::Page(Page::Export), Nav::Close]);
@@ -252,7 +255,8 @@ fn act(app: &mut SlideApp, nav: Nav, current: Page) -> Option<Page> {
             // A page that keeps the files (`host_save`) saves as the desktop does.
             let web = app.services.pick_save.is_none() && app.services.download.is_some() && app.services.host_save.is_none();
             let has_path = app.session.active().is_some_and(|d| d.path.is_some());
-            if !has_path && !web {
+            // In the Pure edition Save always asks the host to save now.
+            if !has_path && !web && !crate::pure::ON {
                 // A presentation that was never saved goes to Save As first, as in PowerPoint.
                 return Some(Page::SaveAs);
             }
@@ -326,6 +330,9 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     if !has_doc && bs.page.needs_doc() {
         bs.page = Page::Home;
     }
+    if crate::pure::ON {
+        bs.page = crate::pure::file_page(bs.page, has_doc);
+    }
     let (nav_bg, page_bg) = colours(&t);
     let mut out = Outcome::default();
     let (top, bottom) = entries(has_doc);
@@ -353,7 +360,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
         }
         let mut index = 0;
         for (k, nav) in top.iter().enumerate() {
-            if k == 3 {
+            if k == 3 && !crate::pure::ON {
                 separator(ui, &t);
             }
             if nav_item(ui, *nav, &bs, index, &t).clicked() {

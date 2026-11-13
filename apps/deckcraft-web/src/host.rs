@@ -133,7 +133,7 @@ impl Bridge {
             let Message::Open { name, data } = message else { return };
             if data.size() >= MAX_OPEN_BYTES {
                 log::warn!("host file {name} is 2 GiB or larger; not opened");
-                let _ = host.post_failed(&format!("{name} is 2 GiB or larger, which DeckCraft's web build cannot open"), None);
+                let _ = host.post_failed(&format!("{name} is 2 GiB or larger, which {}'s web build cannot open", deckcraft_ui_egui::pure::app_name()), None);
                 return;
             }
             let FileData::Bytes(array) = data else {

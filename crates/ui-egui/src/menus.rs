@@ -33,6 +33,8 @@ pub fn ui_shortcut(app: &mut SlideApp, key: egui::Key, m: Mods) -> bool {
             app.save();
             return true;
         }
+        // The host keeps the files: Save As, Close and Open have no shortcut in the Pure edition.
+        (S, true, true, false) | (W | O, true, false, false) if crate::pure::ON => return false,
         (S, true, true, false) => "app.saveAsDialog",
         // File tab: Alt+F opens it on Home with the keyboard in its side menu; Ctrl+P on Print.
         (F, false, false, true) => {
@@ -108,6 +110,9 @@ fn palette_items(session: &deckcraft_engine::Session, q: &str) -> Vec<(String, S
         .chain(crate::UI_COMMANDS.iter().filter(|c| !deckcraft_engine::cmd::needs_arguments(c.3)).map(|c| (c.0.to_string(), c.1.to_string(), c.2)))
         .filter(|(id, label, _)| q.is_empty() || label.to_lowercase().contains(q) || id.to_lowercase().contains(q))
         .collect();
+    if crate::pure::ON {
+        crate::pure::palette(&mut items);
+    }
     items.sort_by_key(|(_, l, _)| !l.to_lowercase().starts_with(q));
     items.truncate(60);
     items
@@ -307,7 +312,11 @@ pub fn menu_tree() -> Vec<(&'static str, Vec<(&'static str, &'static str)>)> {
                 ("Set Up Show…", "show.setup"),
             ],
         ),
-        ("Help", vec![("About DeckCraft", "app.about"), ("Check for Updates…", "app.checkUpdates"), ("Command Palette", "app.palette")]),
+        if crate::pure::ON {
+            ("Help", vec![(crate::pure::title("About DeckCraft"), "app.about"), ("Command Palette", "app.palette")])
+        } else {
+            ("Help", vec![("About DeckCraft", "app.about"), ("Check for Updates…", "app.checkUpdates"), ("Command Palette", "app.palette")])
+        },
     ]
 }
 

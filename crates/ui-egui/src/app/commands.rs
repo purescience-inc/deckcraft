@@ -226,6 +226,8 @@ impl SlideApp {
                 return Ok(json!({"printed": self.print_pdf(p.clone())}));
             }
             "app.about" => self.dialog = Some(dialogs::Dialog::new("about")),
+            // The host updates the Pure edition; it never looks for a release itself.
+            "app.checkUpdates" if crate::pure::ON => return Err("updates come with the host application".into()),
             "app.checkUpdates" => {
                 #[cfg(not(target_arch = "wasm32"))]
                 updates_ui::request_check(self);

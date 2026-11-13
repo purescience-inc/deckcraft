@@ -164,3 +164,110 @@ pub const ROW_H: f32 = 24.0;
 pub const ICON: f32 = 16.0;
 /// Large ribbon icons.
 pub const ICON_LARGE: f32 = 24.0;
+
+// ---------------------------------------------------------------------------------------------
+// What the Pure edition leaves out
+// ---------------------------------------------------------------------------------------------
+
+/// A dialog or menu title with upstream's product name replaced by ours.
+pub fn title(upstream: &'static str) -> &'static str {
+    if !ON {
+        return upstream;
+    }
+    match upstream {
+        "DeckCraft" => NAME,
+        "About DeckCraft" => "About PureSlides (Craft)",
+        other => other,
+    }
+}
+
+/// Commands the command search does not list: the host opens, closes and keeps the files, picks
+/// light or dark, and updates the app; community links are not shown. The commands themselves
+/// still run when called by id.
+const UNLISTED: &[&str] = &[
+    "app.links",
+    "app.checkUpdates",
+    "app.home",
+    "app.openDialog",
+    "app.saveAsDialog",
+    "app.closePresentation",
+    "app.browseThemeDialog",
+    "view.dark",
+    "file.new",
+    "file.open",
+    "file.close",
+    "file.saveAs",
+    "file.recovery.open",
+];
+
+/// The command search's entries `(id, label, shortcut)` as the Pure edition lists them.
+pub fn palette(items: &mut Vec<(String, String, Option<&'static str>)>) {
+    items.retain(|(id, ..)| !UNLISTED.contains(&id.as_str()));
+    for (_, label, _) in items.iter_mut() {
+        if label == "About DeckCraft" {
+            *label = title("About DeckCraft").to_string();
+        }
+    }
+}
+
+/// The quick access toolbar: Save, Undo, Redo.
+pub fn qat_defaults() -> Vec<crate::qat::QatItem> {
+    use crate::icons::Icon;
+    use crate::qat::QatItem;
+    vec![QatItem::new("file.save", "Save", Icon::Save), QatItem::new("edit.undo", "Undo", Icon::Undo), QatItem::new("edit.redo", "Redo", Icon::Redo)]
+}
+
+/// The File screen's side list. The host opens, closes and keeps the files, so Home, Open, Save
+/// As and Close are left out; New is offered only when nothing is open, where it cannot leave the
+/// host's tab pointing at another presentation.
+pub fn file_entries(has_doc: bool) -> (Vec<crate::backstage::Nav>, Vec<crate::backstage::Nav>) {
+    use crate::backstage::{Nav, Page};
+    let top =
+        if has_doc { vec![Nav::Page(Page::Info), Nav::Save, Nav::Page(Page::Print), Nav::Page(Page::Export)] } else { vec![Nav::Page(Page::New)] };
+    (top, vec![Nav::Page(Page::About), Nav::Options])
+}
+
+/// The page shown when `page` is asked for: a page the side list does not have gives way to the
+/// first one it has.
+pub fn file_page(page: crate::backstage::Page, has_doc: bool) -> crate::backstage::Page {
+    use crate::backstage::{Nav, Page};
+    let (top, bottom) = file_entries(has_doc);
+    if top.iter().chain(&bottom).any(|n| *n == Nav::Page(page)) {
+        return page;
+    }
+    if has_doc { Page::Info } else { Page::New }
+}
+
+/// The About text, shared by the About dialog and File › About: our name, what it is built on,
+/// and upstream's own licence and copyright line, unchanged. No links.
+pub fn about_text(ui: &mut egui::Ui) {
+    let t = Tokens::get(ui.ctx());
+    ui.label(egui::RichText::new(about_line()).color(t.text));
+    ui.label(egui::RichText::new(crate::dialogs::version_line()).color(t.text_dim));
+    ui.add_space(8.0);
+    ui.label(egui::RichText::new("DeckCraft is an open-source, clean-room project. Not affiliated with Microsoft.").color(t.text_dim));
+    ui.label(egui::RichText::new("MIT OR Apache-2.0 · © 2026 ArtCraft Team and the DeckCraft contributors").color(t.text_dim));
+}
+
+/// The About dialog's first tab. Contributors and Models stay on the tabs beside it.
+pub fn about(ui: &mut egui::Ui) {
+    let t = Tokens::get(ui.ctx());
+    ui.add_space(4.0);
+    ui.label(egui::RichText::new(NAME).font(crate::theme::bold(14.0)).color(t.text));
+    ui.add_space(4.0);
+    about_text(ui);
+    ui.add_space(4.0);
+}
+
+/// File › About: the About text and the way to the contributor credits upstream compiled in.
+/// Light and dark follow the host, so there is no appearance choice here.
+pub fn about_page(app: &mut crate::SlideApp, ui: &mut egui::Ui) {
+    let t = Tokens::get(ui.ctx());
+    ui.label(egui::RichText::new(NAME).font(crate::theme::bold(14.0)).color(t.text));
+    ui.add_space(4.0);
+    about_text(ui);
+    ui.add_space(16.0);
+    if ui.button("Credits…").on_hover_text("The people and models who built DeckCraft").clicked() {
+        let _ = app.run("app.about", serde_json::json!({}));
+    }
+}

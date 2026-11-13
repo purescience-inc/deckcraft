@@ -60,8 +60,10 @@ pub(super) fn insert(app: &mut SlideApp, ui: &mut Ui) {
     group(ui, |ui| {
         big(app, ui, Icon::Picture, "Pictures", "app.insertPictureDialog", json!({}));
         photo_album_button(app, ui);
-        let r = big_button(ui, Icon::Screenshot, "Screenshot", false);
-        let _ = r.on_hover_text("Screenshot (not available yet)");
+        if !crate::pure::ON {
+            let r = big_button(ui, Icon::Screenshot, "Screenshot", false);
+            let _ = r.on_hover_text("Screenshot (not available yet)");
+        }
     });
     group(ui, |ui| {
         let r = big_button(ui, Icon::Shapes, "Shapes", enabled(app, "shape.insert"));

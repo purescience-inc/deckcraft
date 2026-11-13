@@ -31,8 +31,10 @@ pub(super) fn slide_show(app: &mut SlideApp, ui: &mut Ui) {
                 s.rehearse = true;
             }
         }
-        let r = big_button(ui, Icon::Record, "Record", false);
-        let _ = r.on_hover_text("Recording narration needs audio capture (coming soon)");
+        if !crate::pure::ON {
+            let r = big_button(ui, Icon::Record, "Record", false);
+            let _ = r.on_hover_text("Recording narration needs audio capture (coming soon)");
+        }
     });
     group(ui, |ui| {
         rows(ui, |ui| {
@@ -54,8 +56,10 @@ pub(super) fn slide_show(app: &mut SlideApp, ui: &mut Ui) {
 
 pub(super) fn record(app: &mut SlideApp, ui: &mut Ui) {
     group(ui, |ui| {
-        let r = big_button(ui, Icon::Cameo, "Cameo", false);
-        let _ = r.on_hover_text("Camera capture is not available yet");
+        if !crate::pure::ON {
+            let r = big_button(ui, Icon::Cameo, "Cameo", false);
+            let _ = r.on_hover_text("Camera capture is not available yet");
+        }
         if big_button(ui, Icon::PlayFromStart, "From\nBeginning", true).clicked() {
             app.start_show(app.show_start_index(), false);
             if let Some(s) = app.show.as_mut() {
@@ -70,9 +74,11 @@ pub(super) fn record(app: &mut SlideApp, ui: &mut Ui) {
             }
         }
     });
-    group(ui, |ui| {
-        if big_button(ui, Icon::Help, "Learn\nMore", true).clicked() {
-            app.open_url(deckcraft_engine::links::APP_PAGE);
-        }
-    });
+    if !crate::pure::ON {
+        group(ui, |ui| {
+            if big_button(ui, Icon::Help, "Learn\nMore", true).clicked() {
+                app.open_url(deckcraft_engine::links::APP_PAGE);
+            }
+        });
+    }
 }

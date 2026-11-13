@@ -16,6 +16,9 @@ pub(super) fn credits_block(ui: &mut Ui, models: bool) -> Rect {
 }
 
 pub fn about(_app: &mut SlideApp, ui: &mut Ui) {
+    if crate::pure::ON {
+        return crate::pure::about(ui);
+    }
     let t = Tokens::get(ui.ctx());
     ui.vertical_centered(|ui| {
         let (r, _) = ui.allocate_exact_size(vec2(64.0, 64.0), Sense::hover());

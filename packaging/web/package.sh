@@ -21,6 +21,11 @@ fi
 
 SITE="$ROOT/dist/web"
 [[ -f "$SITE/index.html" ]] || { echo "error: $SITE/index.html missing; run without --skip-build" >&2; exit 1; }
+# The Pure edition's page carries its own name while it loads (the app itself is named in pure.rs).
+if [[ " ${CRAFT_WEB_FEATURES:-} " == *" pure "* ]]; then
+  sed -i.bak -e 's|<title>DeckCraft</title>|<title>PureSlides (Craft)</title>|' -e 's|Loading DeckCraft&hellip;|Loading PureSlides (Craft)\&hellip;|' "$SITE/index.html"
+  rm -f "$SITE/index.html.bak"
+fi
 # Paths must be relative so the site works under any prefix (public_url = "./" in Trunk.toml).
 if grep -Eq '(src|href)="/[^/]' "$SITE/index.html"; then
   echo "error: $SITE/index.html has root-absolute URLs; it would break when served from a sub-path" >&2

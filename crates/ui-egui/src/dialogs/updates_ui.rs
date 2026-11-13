@@ -22,7 +22,8 @@ impl Default for Runtime {
 }
 
 pub(crate) fn enable(app: &mut SlideApp) {
-    app.updates_rt.enabled = true;
+    // The Pure edition never checks for a release on its own.
+    app.updates_rt.enabled = !crate::pure::ON;
 }
 
 /// Help > Check for Updates…: runs a check and reports the outcome either way.

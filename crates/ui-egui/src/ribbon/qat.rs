@@ -57,6 +57,9 @@ pub fn common() -> Vec<QatItem> {
 
 /// The toolbar a new install starts with.
 pub fn defaults() -> Vec<QatItem> {
+    if crate::pure::ON {
+        return crate::pure::qat_defaults();
+    }
     // Home, Save, Export, Undo, Redo, Start from Beginning: the title bar's buttons before it was customizable.
     let all = common();
     ["app.home", "file.save", "app.exportDialog", "edit.undo", "edit.redo", "show.fromStart"]
