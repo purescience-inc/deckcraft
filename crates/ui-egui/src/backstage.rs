@@ -450,10 +450,14 @@ fn nav_item(ui: &mut Ui, nav: Nav, bs: &Backstage, index: usize, t: &Tokens) -> 
     resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, label));
     let p = ui.painter();
     let row = rect.shrink2(vec2(6.0, 1.0));
-    if resp.hovered() {
-        p.rect_filled(row, CornerRadius::same(2), t.hover);
+    if crate::pure::ON && selected {
+        // Pure edition, as in the other editors: the "on" fill and a 2px accent bar.
+        p.rect_filled(rect, 0.0, crate::pure::paper(t.dark).on_fill);
+        p.rect_filled(Rect::from_min_size(rect.min, vec2(2.0, rect.height())), 0.0, t.accent);
+    } else if resp.hovered() {
+        p.rect_filled(if crate::pure::ON { rect } else { row }, CornerRadius::same(2), t.hover);
     }
-    if bs.focus == Some(index) || selected {
+    if bs.focus == Some(index) || (selected && !crate::pure::ON) {
         // The current page (and the keyboard focus) is outlined, as in PowerPoint.
         let ink = if bs.focus == Some(index) { t.text } else { t.border };
         p.rect_stroke(row, CornerRadius::same(2), Stroke::new(1.0, ink), StrokeKind::Inside);

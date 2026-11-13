@@ -10,6 +10,9 @@ use egui::Color32;
 
 use crate::theme::Tokens;
 
+pub mod chrome;
+pub mod widgets;
+
 /// Whether this build is the Pure edition.
 pub const ON: bool = cfg!(feature = "pure");
 

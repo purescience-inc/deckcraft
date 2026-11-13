@@ -153,6 +153,10 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             }
         });
     }
+    // The Pure edition's toolbar is Save, Undo, Redo; a ribbon button's right-click still adds to it.
+    if crate::pure::ON {
+        return;
+    }
     let r = crate::widgets::icon_toggle(ui, Icon::ChevronDown, "Customize Quick Access Toolbar", true, false);
     egui::Popup::menu(&r).show(|ui| {
         ui.label(egui::RichText::new("Customize Quick Access Toolbar").strong());

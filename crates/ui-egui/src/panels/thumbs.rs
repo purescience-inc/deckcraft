@@ -91,7 +91,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
         .resizable(true)
         .default_size(app.ui.thumbs_width)
         .size_range(150.0..=420.0)
-        .frame(egui::Frame::NONE.fill(t.chrome))
+        .frame(egui::Frame::NONE.fill(crate::pure::chrome::pane_fill(&t)))
         .show(ui, |ui| {
             app.ui.thumbs_width = ui.available_width();
             if in_master {
@@ -234,7 +234,10 @@ fn list(app: &mut SlideApp, ui: &mut Ui) {
                 need_more |= near;
             }
         }
-        if selected {
+        if selected && crate::pure::ON {
+            // A square 2-point accent frame, flush with the thumbnail.
+            p.rect_stroke(img, CornerRadius::ZERO, Stroke::new(2.0, t.accent), egui::StrokeKind::Outside);
+        } else if selected {
             p.rect_stroke(img.expand(2.0), CornerRadius::same(4), Stroke::new(3.0, t.accent), egui::StrokeKind::Outside);
         } else {
             p.rect_stroke(

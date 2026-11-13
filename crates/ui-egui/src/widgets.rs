@@ -9,7 +9,7 @@ use crate::icons::{self, Icon};
 use crate::theme::{self, Tokens};
 
 /// Height of the ribbon's content area.
-pub const RIBBON_H: f32 = 66.0;
+pub const RIBBON_H: f32 = if crate::pure::ON { crate::pure::widgets::RIBBON_H } else { 66.0 };
 
 fn bg(ui: &Ui, r: &Response, selected: bool, t: &Tokens) -> Option<Color32> {
     if !r.sense.senses_click() && !r.sense.senses_drag() {
@@ -49,6 +49,9 @@ fn big_button_width(text_w: f32, split: bool) -> f32 {
 /// response). Like Office's split buttons, the icon and the label text run the main command; only
 /// the chevron at the end of the label row opens the menu.
 pub fn big_button_ex(ui: &mut Ui, icon: Icon, label: &str, enabled: bool, split: bool, selected: bool) -> (Response, Option<Response>) {
+    if crate::pure::ON {
+        return crate::pure::widgets::big_button_ex(ui, icon, label, enabled, split, selected);
+    }
     let t = Tokens::get(ui.ctx());
     let font = theme::font(11.0);
     let lines: Vec<&str> = wrap_label(label);
@@ -94,7 +97,7 @@ pub fn big_button_ex(ui: &mut Ui, icon: Icon, label: &str, enabled: bool, split:
     (if split { main_resp } else { resp }, arrow_resp)
 }
 
-fn wrap_label(label: &str) -> Vec<&str> {
+pub(crate) fn wrap_label(label: &str) -> Vec<&str> {
     if let Some((a, b)) = label.split_once('\n') {
         return vec![a, b];
     }
@@ -148,6 +151,9 @@ pub fn small_button_named(
     selected: bool,
     split: bool,
 ) -> (Response, Option<Response>) {
+    if crate::pure::ON {
+        return crate::pure::widgets::small_button_named(ui, icon, label, name, enabled, selected, split);
+    }
     let t = Tokens::get(ui.ctx());
     let font = theme::font(12.0);
     let tw = if label.is_empty() { 0.0 } else { ui.fonts_mut(|f| f.layout_no_wrap(label.to_string(), font.clone(), t.text).size().x) + 5.0 };
@@ -244,6 +250,9 @@ fn split_popup_id(main: &Response) -> egui::Id {
 /// A menu choice ticked in the icon column (Align to Slide…), its text lined up with the
 /// [`small_button`] items around it.
 pub fn check_item(ui: &mut Ui, label: &str, enabled: bool, on: bool) -> Response {
+    if crate::pure::ON {
+        return crate::pure::widgets::check_item(ui, label, enabled, on);
+    }
     let t = Tokens::get(ui.ctx());
     let font = theme::font(12.0);
     let tw = ui.fonts_mut(|f| f.layout_no_wrap(label.to_string(), font.clone(), t.text).size().x) + 5.0;
@@ -262,6 +271,9 @@ pub fn check_item(ui: &mut Ui, label: &str, enabled: bool, on: bool) -> Response
 
 /// A square icon toggle (B, I, U, alignment…).
 pub fn icon_toggle(ui: &mut Ui, icon: Icon, tip: &str, enabled: bool, on: bool) -> Response {
+    if crate::pure::ON {
+        return crate::pure::widgets::icon_toggle(ui, icon, tip, enabled, on);
+    }
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(24.0, 22.0), if enabled { Sense::click() } else { Sense::hover() });
     let painter = ui.painter_at(rect);
@@ -276,6 +288,9 @@ pub fn icon_toggle(ui: &mut Ui, icon: Icon, tip: &str, enabled: bool, on: bool) 
 
 /// Icon with a colour bar under it and a dropdown arrow (Font Color, Highlight, Shape Fill…).
 pub fn color_split(ui: &mut Ui, icon: Icon, tip: &str, color: Color32, enabled: bool) -> (Response, Response) {
+    if crate::pure::ON {
+        return crate::pure::widgets::color_split(ui, icon, tip, color, enabled);
+    }
     let t = Tokens::get(ui.ctx());
     let (rect, resp) = ui.allocate_exact_size(vec2(34.0, 22.0), Sense::hover());
     let main = ui.interact(Rect::from_min_size(rect.min, vec2(23.0, 22.0)), resp.id.with("m"), if enabled { Sense::click() } else { Sense::hover() });
@@ -314,6 +329,9 @@ pub fn group<R>(ui: &mut Ui, add: impl FnOnce(&mut Ui) -> R) -> R {
 }
 
 pub fn separator(ui: &mut Ui) {
+    if crate::pure::ON {
+        return crate::pure::widgets::separator(ui);
+    }
     let t = Tokens::get(ui.ctx());
     let (rect, _) = ui.allocate_exact_size(vec2(13.0, RIBBON_H - 6.0), Sense::hover());
     ui.painter().line_segment([pos2(rect.center().x, rect.min.y + 6.0), pos2(rect.center().x, rect.max.y - 4.0)], Stroke::new(1.0, t.separator));
@@ -321,6 +339,9 @@ pub fn separator(ui: &mut Ui) {
 
 /// Two or three rows of small controls stacked in one ribbon column.
 pub fn rows<R>(ui: &mut Ui, add: impl FnOnce(&mut Ui) -> R) -> R {
+    if crate::pure::ON {
+        return crate::pure::widgets::rows(ui, add);
+    }
     ui.vertical(|ui| {
         ui.spacing_mut().item_spacing = vec2(1.0, 0.0);
         ui.add_space(0.0);
@@ -334,24 +355,29 @@ pub fn rows<R>(ui: &mut Ui, add: impl FnOnce(&mut Ui) -> R) -> R {
 /// value, so an empty box is still announced by its purpose and never by an internal key (#1956).
 pub fn dropdown(ui: &mut Ui, label: &str, current: &str, width: f32, enabled: bool, add_items: impl FnOnce(&mut Ui)) -> Response {
     let t = Tokens::get(ui.ctx());
-    let (rect, resp) = ui.allocate_exact_size(vec2(width, 22.0), if enabled { Sense::click() } else { Sense::hover() });
-    let painter = ui.painter_at(rect);
-    painter.rect(
-        rect,
-        CornerRadius::same(4),
-        t.field_bg,
-        Stroke::new(1.0, if resp.hovered() { t.text_faint } else { t.border }),
-        egui::StrokeKind::Inside,
-    );
-    let clip = rect.shrink2(vec2(6.0, 0.0));
-    painter.with_clip_rect(Rect::from_min_max(clip.min, pos2(clip.max.x - 12.0, clip.max.y))).text(
-        pos2(rect.min.x + 6.0, rect.center().y),
-        Align2::LEFT_CENTER,
-        current,
-        theme::font(12.0),
-        if enabled { t.text } else { t.text_faint },
-    );
-    chevron(&painter, pos2(rect.max.x - 9.0, rect.center().y), 3.0, t.text_dim);
+    let h = if crate::pure::ON { crate::pure::ROW_H } else { 22.0 };
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, h), if enabled { Sense::click() } else { Sense::hover() });
+    if crate::pure::ON {
+        crate::pure::widgets::paint_dropdown(ui, rect, &resp, current, enabled);
+    } else {
+        let painter = ui.painter_at(rect);
+        painter.rect(
+            rect,
+            CornerRadius::same(4),
+            t.field_bg,
+            Stroke::new(1.0, if resp.hovered() { t.text_faint } else { t.border }),
+            egui::StrokeKind::Inside,
+        );
+        let clip = rect.shrink2(vec2(6.0, 0.0));
+        painter.with_clip_rect(Rect::from_min_max(clip.min, pos2(clip.max.x - 12.0, clip.max.y))).text(
+            pos2(rect.min.x + 6.0, rect.center().y),
+            Align2::LEFT_CENTER,
+            current,
+            theme::font(12.0),
+            if enabled { t.text } else { t.text_faint },
+        );
+        chevron(&painter, pos2(rect.max.x - 9.0, rect.center().y), 3.0, t.text_dim);
+    }
     resp.widget_info(|| egui::WidgetInfo {
         current_text_value: (!current.is_empty()).then(|| current.to_string()),
         ..egui::WidgetInfo::labeled(egui::Role::ComboBox, enabled, label)

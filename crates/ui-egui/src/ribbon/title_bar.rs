@@ -32,6 +32,10 @@ pub(super) fn title_geometry(integrated: bool) -> (f32, f32, f32) {
 pub fn title_bar(app: &mut SlideApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     let (height, left, control_h) = title_geometry(app.integrated_titlebar);
+    if crate::pure::ON {
+        let height = if app.integrated_titlebar { height } else { crate::pure::chrome::TITLE_H };
+        return crate::pure::chrome::title_bar(app, ui, left, height);
+    }
     egui::Panel::top("title_bar").exact_size(height).frame(egui::Frame::NONE.fill(t.chrome)).show(ui, |ui| {
         let rect = ui.max_rect();
         // Dragging the empty title bar moves the window.

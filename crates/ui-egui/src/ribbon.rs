@@ -126,44 +126,55 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     if !TABS.contains(&app.ui.tab.as_str()) && !ctx_tabs.contains(&app.ui.tab.as_str()) {
         app.ui.tab = "Home".into();
     }
-    let h = 28.0 + if app.ui.ribbon_collapsed { 4.0 } else { RIBBON_H + 20.0 };
-    egui::Panel::top("ribbon").exact_size(h).frame(egui::Frame::NONE.fill(t.chrome)).show(ui, |ui| {
+    let pure = crate::pure::ON;
+    let h = if pure { crate::pure::chrome::ribbon_height(app.ui.ribbon_collapsed) } else { 28.0 + if app.ui.ribbon_collapsed { 4.0 } else { RIBBON_H + 20.0 } };
+    // The tab strip's top inset, tab height, padding inside a tab and the gap between tabs.
+    let (tab_y, tab_h, tab_pad, tab_gap) = if pure { (0.0, crate::pure::chrome::TABS_H, 24.0, 0.0) } else { (2.0, 24.0, 18.0, 2.0) };
+    egui::Panel::top("ribbon").exact_size(h).show_separator_line(!pure).frame(egui::Frame::NONE.fill(crate::pure::chrome::pane_fill(&t))).show(ui, |ui| {
         let rect = ui.max_rect();
         // Tabs. File comes first and opens the File tab's full-window view (Backstage), as in
         // PowerPoint.
-        let mut x = rect.min.x + 12.0;
-        let y = rect.min.y + 2.0;
+        let mut x = rect.min.x + if pure { 8.0 } else { 12.0 };
+        let y = rect.min.y + tab_y;
         {
-            let w = ui.fonts_mut(|f| f.layout_no_wrap("File".to_string(), theme::font(13.0), t.text).size().x) + 18.0;
-            let r = Rect::from_min_size(pos2(x, y), vec2(w, 24.0));
+            let w = ui.fonts_mut(|f| f.layout_no_wrap("File".to_string(), theme::font(13.0), t.text).size().x) + tab_pad;
+            let r = Rect::from_min_size(pos2(x, y), vec2(w, tab_h));
             let resp = ui.interact(r, ui.scope_id().with("tab_file"), Sense::click());
             resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "File"));
-            if resp.hovered() {
-                ui.painter().rect_filled(r.shrink2(vec2(2.0, 2.0)), CornerRadius::same(4), t.hover);
+            if pure {
+                crate::pure::chrome::paint_tab(ui, r, "File", false, &resp);
+            } else {
+                if resp.hovered() {
+                    ui.painter().rect_filled(r.shrink2(vec2(2.0, 2.0)), CornerRadius::same(4), t.hover);
+                }
+                ui.painter().text(r.center(), Align2::CENTER_CENTER, "File", theme::font(13.0), t.text);
             }
-            ui.painter().text(r.center(), Align2::CENTER_CENTER, "File", theme::font(13.0), t.text);
             if resp.on_hover_text("File (Alt+F)").clicked() {
                 app.open_backstage(crate::backstage::Page::Home);
             }
-            x += w + 2.0;
+            x += w + tab_gap;
         }
         let all: Vec<(&str, bool)> = TABS.iter().map(|s| (*s, false)).chain(ctx_tabs.iter().map(|s| (*s, true))).collect();
         for (name, contextual) in all {
             let font = theme::font(13.0);
-            let w = ui.fonts_mut(|f| f.layout_no_wrap(name.to_string(), font.clone(), t.text).size().x) + 18.0;
-            let r = Rect::from_min_size(pos2(x, y), vec2(w, 24.0));
+            let w = ui.fonts_mut(|f| f.layout_no_wrap(name.to_string(), font.clone(), t.text).size().x) + tab_pad;
+            let r = Rect::from_min_size(pos2(x, y), vec2(w, tab_h));
             let resp = ui.interact(r, ui.scope_id().with(("tab", name)), Sense::click());
             resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, name));
             let active = app.ui.tab == name;
-            if resp.hovered() && !active {
-                ui.painter().rect_filled(r.shrink2(vec2(2.0, 2.0)), CornerRadius::same(4), t.hover);
-            }
-            let col = if contextual { t.contextual } else { t.text };
-            let f = if active { theme::bold(13.0) } else { font };
-            ui.painter().text(r.center(), Align2::CENTER_CENTER, name, f, col);
-            if active {
-                let uw = (w - 20.0).max(16.0);
-                ui.painter().rect_filled(Rect::from_center_size(pos2(r.center().x, r.max.y - 1.0), vec2(uw, 3.0)), CornerRadius::same(1), t.accent);
+            if pure {
+                crate::pure::chrome::paint_tab(ui, r, name, active, &resp);
+            } else {
+                if resp.hovered() && !active {
+                    ui.painter().rect_filled(r.shrink2(vec2(2.0, 2.0)), CornerRadius::same(4), t.hover);
+                }
+                let col = if contextual { t.contextual } else { t.text };
+                let f = if active { theme::bold(13.0) } else { font };
+                ui.painter().text(r.center(), Align2::CENTER_CENTER, name, f, col);
+                if active {
+                    let uw = (w - 20.0).max(16.0);
+                    ui.painter().rect_filled(Rect::from_center_size(pos2(r.center().x, r.max.y - 1.0), vec2(uw, 3.0)), CornerRadius::same(1), t.accent);
+                }
             }
             if resp.clicked() {
                 if active {
@@ -176,16 +187,24 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             if resp.double_clicked() {
                 app.ui.ribbon_collapsed = !app.ui.ribbon_collapsed;
             }
-            x += w + 2.0;
+            x += w + tab_gap;
         }
         if app.ui.ribbon_collapsed {
+            if pure {
+                crate::pure::chrome::ribbon_frame(ui, rect);
+            }
             return;
         }
         // The white card.
         let card = Rect::from_min_max(pos2(rect.min.x + 8.0, rect.min.y + 30.0), pos2(rect.max.x - 8.0, rect.min.y + 30.0 + RIBBON_H + 10.0));
-        ui.painter().rect_filled(card.translate(vec2(0.0, 1.0)), CornerRadius::same(10), t.card_border);
-        ui.painter().rect_filled(card, CornerRadius::same(10), t.card);
-        let inner = Rect::from_min_size(pos2(card.min.x + 10.0, card.min.y + 5.0), vec2(card.width() - 20.0, RIBBON_H));
+        // The Pure edition's ribbon is a flat band the width of the window with one line under it.
+        let inner = if pure {
+            crate::pure::chrome::ribbon_frame(ui, rect)
+        } else {
+            ui.painter().rect_filled(card.translate(vec2(0.0, 1.0)), CornerRadius::same(10), t.card_border);
+            ui.painter().rect_filled(card, CornerRadius::same(10), t.card);
+            Rect::from_min_size(pos2(card.min.x + 10.0, card.min.y + 5.0), vec2(card.width() - 20.0, RIBBON_H))
+        };
         let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(inner));
         cui.set_clip_rect(inner.expand2(vec2(0.0, 3.0)));
         // Reserve a gutter on both sides for the overflow chevrons. They are painted and
@@ -210,7 +229,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             area.scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden).auto_shrink([false, false]).show(&mut sui, |ui| {
                 ui.set_min_height(RIBBON_H);
                 ui.horizontal_top(|ui| {
-                    ui.spacing_mut().item_spacing.x = 1.0;
+                    ui.spacing_mut().item_spacing.x = if pure { 0.0 } else { 1.0 };
                     match tab.as_str() {
                         "Home" => home(app, ui),
                         "Insert" => insert(app, ui),
@@ -289,6 +308,10 @@ pub(super) fn spare_room(ctx: &egui::Context, tab: &str) -> Option<f32> {
 fn edge_cue(ui: &mut Ui, rect: Rect, glyph: &str, hint: &str, t: &Tokens) -> bool {
     let resp = ui.interact(rect, ui.scope_id().with(glyph), Sense::click()).on_hover_text(hint);
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, hint));
+    if crate::pure::ON {
+        crate::pure::chrome::paint_edge_cue(ui, rect, glyph == "‹", &resp);
+        return resp.clicked();
+    }
     let ink = if resp.hovered() { t.text } else { t.text_dim };
     ui.painter().rect_filled(rect, CornerRadius::ZERO, t.card);
     ui.painter().text(rect.center(), Align2::CENTER_CENTER, glyph, egui::FontId::proportional(18.0), ink);

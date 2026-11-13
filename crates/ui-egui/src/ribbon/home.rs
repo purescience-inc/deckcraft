@@ -208,7 +208,7 @@ fn font_group(app: &mut SlideApp, ui: &mut Ui, st: &Value) {
                 toggle(app, ui, Icon::FontShrink, "Decrease Font Size", "format.shrink", false);
                 toggle(app, ui, Icon::ClearFormatting, "Clear All Formatting", "format.clear", false);
             });
-            ui.add_space(3.0);
+            ui.add_space(if crate::pure::ON { 8.0 } else { 3.0 });
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 1.0;
                 let b = |k: &str| st.get(k).and_then(Value::as_bool).unwrap_or(false);
@@ -355,7 +355,7 @@ fn paragraph_group(app: &mut SlideApp, ui: &mut Ui, st: &Value) {
                     }
                 });
             });
-            ui.add_space(3.0);
+            ui.add_space(if crate::pure::ON { 8.0 } else { 3.0 });
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 1.0;
                 let al = st.get("align").and_then(Value::as_str).unwrap_or("");

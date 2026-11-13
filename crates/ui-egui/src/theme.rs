@@ -160,6 +160,9 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     v.widgets.open.weak_bg_fill = t.pressed;
     v.window_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 18, spread: 0, color: t.shadow };
     v.popup_shadow = egui::epaint::Shadow { offset: [0, 3], blur: 12, spread: 0, color: t.shadow };
+    if crate::pure::ON {
+        crate::pure::chrome::visuals(&mut v, t);
+    }
     ctx.set_visuals(v);
     ctx.global_style_mut(|s| {
         s.spacing.item_spacing = egui::vec2(6.0, 4.0);
@@ -169,6 +172,9 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
         s.text_styles.insert(egui::TextStyle::Button, egui::FontId::proportional(13.0));
         s.text_styles.insert(egui::TextStyle::Small, egui::FontId::proportional(11.0));
         s.text_styles.insert(egui::TextStyle::Heading, egui::FontId::proportional(18.0));
+        if crate::pure::ON {
+            crate::pure::chrome::style(s);
+        }
     });
 }
 
@@ -226,6 +232,9 @@ pub fn font_definitions(extra: &[std::sync::Arc<deckcraft_fonts::FontFace>]) -> 
         }
     }
     add_fallback_faces(&mut defs, extra);
+    if crate::pure::ON {
+        crate::pure::chrome::fonts(&mut defs);
+    }
     // The Japanese interface face (the first one when Inter isn't embedded) hints its en and em
     // dashes, bars thinner than a pixel, down to nothing, so they drew as gaps in interface text;
     // unhinted, they draw.
