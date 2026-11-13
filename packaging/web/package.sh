@@ -13,7 +13,10 @@ HERE="$ROOT/packaging/web"
 
 if [[ "${1:-}" != "--skip-build" ]]; then
   command -v trunk >/dev/null || { echo "error: trunk not found (cargo install trunk --locked)" >&2; exit 1; }
-  (cd "$ROOT/apps/deckcraft-web" && trunk build --release)
+  # CRAFT_WEB_FEATURES: cargo features for the web shell (the Pure edition builds with `pure`).
+  FEATURES=()
+  [[ -n "${CRAFT_WEB_FEATURES:-}" ]] && FEATURES=(--features "$CRAFT_WEB_FEATURES")
+  (cd "$ROOT/apps/deckcraft-web" && trunk build --release ${FEATURES[@]+"${FEATURES[@]}"})
 fi
 
 SITE="$ROOT/dist/web"

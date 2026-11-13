@@ -8,6 +8,10 @@ description = "DeckCraft egui frontend (PowerPoint-style UI); swappable — noth
 [lints]
 workspace = true
 
+[features]
+# The PureDesktop edition (see src/pure.rs). Off by default: the default build is upstream's app.
+pure = []
+
 [dependencies]
 deckcraft-geom = { workspace = true }
 deckcraft-color = { workspace = true }

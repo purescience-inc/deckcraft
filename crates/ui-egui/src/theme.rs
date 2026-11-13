@@ -54,7 +54,7 @@ pub struct Tokens {
 
 impl Tokens {
     pub fn light() -> Self {
-        Tokens {
+        let t = Tokens {
             dark: false,
             chrome: Color32::from_rgb(0xF5, 0xF5, 0xF5),
             card: Color32::WHITE,
@@ -83,10 +83,11 @@ impl Tokens {
             control_hover: Color32::from_rgb(0xC8, 0xC8, 0xC8),
             control_pressed: Color32::from_rgb(0xBC, 0xBC, 0xBC),
             shadow: Color32::from_black_alpha(28),
-        }
+        };
+        if crate::pure::ON { crate::pure::tokens(t) } else { t }
     }
     pub fn dark() -> Self {
-        Tokens {
+        let t = Tokens {
             dark: true,
             chrome: Color32::from_rgb(0x26, 0x26, 0x26),
             card: Color32::from_rgb(0x33, 0x33, 0x33),
@@ -115,7 +116,8 @@ impl Tokens {
             control_hover: Color32::from_rgb(0x40, 0x40, 0x40),
             control_pressed: Color32::from_rgb(0x4C, 0x4C, 0x4C),
             shadow: Color32::from_black_alpha(90),
-        }
+        };
+        if crate::pure::ON { crate::pure::tokens(t) } else { t }
     }
     pub fn for_brightness(b: Brightness) -> Self {
         match b {
