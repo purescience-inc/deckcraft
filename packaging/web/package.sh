@@ -41,6 +41,10 @@ cp -R "$SITE/." "$WORK/$NAME/"
 cp "$HERE/_headers" "$HERE/.htaccess" "$WORK/$NAME/"
 cp "$HERE/README.md" "$WORK/$NAME/HOSTING.md"
 copy_docs "$WORK/$NAME"
+# The Pure edition embeds Inter (crates/ui-egui/src/pure.rs): its licence goes with the build.
+if [[ " ${CRAFT_WEB_FEATURES:-} " == *" pure "* ]]; then
+  cp "$ROOT/assets/fonts/OFL-Inter.txt" "$WORK/$NAME/"
+fi
 rm -f "$DIST/$NAME.zip"
 (cd "$WORK" && zip -qr9 "$DIST/$NAME.zip" "$NAME")
 echo "wrote $DIST/$NAME.zip"
