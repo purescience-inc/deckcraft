@@ -146,6 +146,11 @@ impl eframe::App for WebShell {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
         // Browsers cannot read dropped files synchronously. Consume this pass's drops here, with
         // fresh input, and capture the document/slide before the asynchronous read finishes.
+        // Pure edition, hosted: the host decides which presentation its tab shows, so nothing
+        // dropped on the frame is opened (a dropped deck would replace the bound one).
+        if deckcraft_ui_egui::pure::ON && self.bridge.is_some() {
+            raw.dropped_files.clear();
+        }
         for f in std::mem::take(&mut raw.dropped_files) {
             let id = self.app.begin_external_file("drop");
             let inbox = self.inbox.clone();
